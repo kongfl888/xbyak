@@ -2094,8 +2094,6 @@ private:
 	}
 	void opRR(const Reg& r1, const Reg& r2, uint64_t type, int code)
 	{
-		if (!(type & T_ALLOW_DIFF_SIZE) && r1.isREG() && r2.isREG() && r1.getBit() != r2.getBit()) XBYAK_THROW(ERR_BAD_SIZE_OF_REGISTER)
-		if (!(type & T_ALLOW_ABCDH) && (isBadCombination(r1, r2) || isBadCombination(r2, r1))) XBYAK_THROW(ERR_CANT_USE_ABCDH)
 		bool rex2 = rex(r2, r1, type);
 		writeCode(type, r1, code, rex2);
 		setModRM(3, r1.getIdx(), r2.getIdx());
@@ -2105,9 +2103,7 @@ private:
 		if (code2 == NONE) code2 = code;
 		if (type2 && opROO(Reg(), addr, r, type2, code2)) return;
 		if (addr.is64bitDisp()) XBYAK_THROW(ERR_CANT_USE_64BIT_DISP)
-#if XBYAK_STRICT_CHECK_MEM_REG_SIZE == 1
-		if (!(type & T_ALLOW_DIFF_SIZE) && r.getBit() <= BIT && addr.getBit() > 0 && addr.getBit() != r.getBit()) XBYAK_THROW(ERR_BAD_MEM_SIZE)
-#endif
+
 		bool rex2 = rex(addr, r, type);
 		writeCode(type, r, code, rex2);
 		opAddr(addr, r.getIdx());
@@ -2290,7 +2286,7 @@ private:
 		if (op.isMEM()) {
 			opMR(op.getAddress(immSize), r, type, code);
 		} else if (op.isREG(bit)) {
-			opRR(r, op.getReg().changeBit(opBit), type | T_ALLOW_ABCDH, code);
+			opRR(r, op.getReg().changeBit(opBit), type, code);
 		} else {
 			XBYAK_THROW(ERR_BAD_COMBINATION)
 		}
@@ -2421,7 +2417,7 @@ private:
 				return;
 			}
 			if (op.isMEM()) {
-				opMR(op.getAddress(), Reg(ext, Operand::REG, 32), T_ALLOW_DIFF_SIZE, code);
+				opMR(op.getAddress(), Reg(ext, Operand::REG, 32), 0, code);
 				return;
 			}
 		}
@@ -2479,7 +2475,7 @@ private:
 		if (op.isBit(32)) XBYAK_THROW(ERR_BAD_COMBINATION)
 		int w = op.isBit(16);
 		if (!(reg.isREG() && (reg.getBit() > op.getBit()))) XBYAK_THROW(ERR_BAD_COMBINATION)
-		opRO(reg, op, T_0F | T_ALLOW_DIFF_SIZE, code | w);
+		opRO(reg, op, T_0F, code | w);
 	}
 	void opFpuMem(const Address& addr, uint8_t m16, uint8_t m32, uint8_t m64, uint8_t ext, uint8_t m64ext)
 	{
@@ -3143,11 +3139,11 @@ public:
 	}
 	void mov(const Operand& op, const Segment& seg)
 	{
-		opRO(Reg8(seg.getIdx()), op, T_ALLOW_DIFF_SIZE | T_ALLOW_ABCDH, 0x8C, op.isREG(16|i32e));
+		opRO(Reg8(seg.getIdx()), op, 0, 0x8C, op.isREG(16|i32e));
 	}
 	void mov(const Segment& seg, const Operand& op)
 	{
-		opRO(Reg8(seg.getIdx()), op.isREG(16|i32e) ? static_cast<const Operand&>(op.getReg().cvt32()) : op, T_ALLOW_DIFF_SIZE | T_ALLOW_ABCDH, 0x8E, op.isREG(16|i32e));
+		opRO(Reg8(seg.getIdx()), op.isREG(16|i32e) ? static_cast<const Operand&>(op.getReg().cvt32()) : op, 0, 0x8E, op.isREG(16|i32e));
 	}
 #endif
 

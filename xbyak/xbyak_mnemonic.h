@@ -269,7 +269,7 @@ void cmpxchg8b(const Address& addr) { opMR(addr, Reg32(1), T_0F, 0xC7); }
 void comisd(const Xmm& xmm, const Operand& op) { opSSE(xmm, op, T_66|T_0F, 0x2F, isXMM_XMMorMEM); }
 void comiss(const Xmm& xmm, const Operand& op) { opSSE(xmm, op, T_0F, 0x2F, isXMM_XMMorMEM); }
 void cpuid() { db(0x0F); db(0xA2); }
-void crc32(const Reg32e& r, const Operand& op) { if (!((r.isBit(32) && op.isBit(8|16|32)) || (r.isBit(64) && op.isBit(8|64)))) XBYAK_THROW(ERR_BAD_SIZE_OF_REGISTER) int code = 0xF0 | (op.isBit(8) ? 0 : 1); uint64_t type = op.isBit(16) ? T_66:0; type |= T_ALLOW_DIFF_SIZE; if (opROO(Reg(), op, static_cast<const Reg&>(r), T_APX|type, code)) return; opRO(r, op, T_F2|T_0F38|type, code); }
+void crc32(const Reg32e& r, const Operand& op) { if (!((r.isBit(32) && op.isBit(8|16|32)) || (r.isBit(64) && op.isBit(8|64)))) XBYAK_THROW(ERR_BAD_SIZE_OF_REGISTER) int code = 0xF0 | (op.isBit(8) ? 0 : 1); uint64_t type = op.isBit(16) ? T_66:0; if (opROO(Reg(), op, static_cast<const Reg&>(r), T_APX|type, code)) return; opRO(r, op, T_F2|T_0F38|type, code); }
 void ctesta(const Operand& op, const Reg& r, int dfv = 0) { opCcmp(op, r, dfv, 0x84, 7); }
 void ctesta(const Operand& op, int imm, int dfv = 0) { opTesti(op, imm, dfv, 7); }
 void ctestae(const Operand& op, const Reg& r, int dfv = 0) { opCcmp(op, r, dfv, 0x84, 3); }
@@ -687,8 +687,8 @@ void movaps(const Address& addr, const Xmm& xmm) { opSSE(xmm, addr, T_0F|T_NONE,
 void movaps(const Xmm& xmm, const Operand& op) { opMMX(xmm, op, 0x28, T_0F, T_NONE); }
 void movbe(const Address& addr, const Reg& reg) { opMR(addr, reg, T_0F38, 0xF1, T_APX, 0x61); }
 void movbe(const Reg& reg, const Address& addr) { opMR(addr, reg, T_0F38, 0xF0, T_APX, 0x60); }
-void movd(const Mmx& mmx, const Operand& op) { if (!(op.isMEM() || op.isREG(32))) XBYAK_THROW(ERR_BAD_COMBINATION) if (mmx.isXMM()) db(0x66); opSSE(mmx, op, T_0F | T_ALLOW_DIFF_SIZE, 0x6E); }
-void movd(const Operand& op, const Mmx& mmx) { if (!(op.isMEM() || op.isREG(32))) XBYAK_THROW(ERR_BAD_COMBINATION) if (mmx.isXMM()) db(0x66); opSSE(mmx, op, T_0F | T_ALLOW_DIFF_SIZE, 0x7E); }
+void movd(const Mmx& mmx, const Operand& op) { if (!(op.isMEM() || op.isREG(32))) XBYAK_THROW(ERR_BAD_COMBINATION) if (mmx.isXMM()) db(0x66); opSSE(mmx, op, T_0F, 0x6E); }
+void movd(const Operand& op, const Mmx& mmx) { if (!(op.isMEM() || op.isREG(32))) XBYAK_THROW(ERR_BAD_COMBINATION) if (mmx.isXMM()) db(0x66); opSSE(mmx, op, T_0F, 0x7E); }
 void movddup(const Xmm& xmm, const Operand& op) { opSSE(xmm, op, T_DUP|T_F2|T_0F|T_EW1|T_YMM|T_EVEX, 0x12, isXMM_XMMorMEM, NONE); }
 void movdir64b(const Reg& reg, const Address& addr) { opMR(addr, reg.cvt32(), T_66|T_0F38, 0xF8, T_APX|T_66); }
 void movdiri(const Address& addr, const Reg32e& reg) { opMR(addr, reg, T_0F38, 0xF9, T_APX); }
@@ -711,8 +711,8 @@ void movnti(const Address& addr, const Reg32e& reg) { opMR(addr, reg, T_0F, 0xC3
 void movntpd(const Address& addr, const Xmm& reg) { if (reg.getIdx() >= 16) XBYAK_THROW(ERR_BAD_PARAMETER) opSSE(Reg16(reg.getIdx()), addr, T_0F, 0x2B); }
 void movntps(const Address& addr, const Xmm& xmm) { opSSE(Xmm(xmm.getIdx()), addr, T_0F, 0x2B); }
 void movntq(const Address& addr, const Mmx& mmx) { if (!mmx.isMMX()) XBYAK_THROW(ERR_BAD_COMBINATION) opSSE(mmx, addr, T_0F, 0xE7); }
-void movq(const Address& addr, const Mmx& mmx) { if (mmx.isXMM()) db(0x66); opSSE(mmx, addr, T_0F | T_ALLOW_DIFF_SIZE, mmx.isXMM() ? 0xD6 : 0x7F); }
-void movq(const Mmx& mmx, const Operand& op) { if (!op.isMEM() && mmx.getKind() != op.getKind()) XBYAK_THROW(ERR_BAD_COMBINATION) if (mmx.isXMM()) db(0xF3); opSSE(mmx, op, T_0F | T_ALLOW_DIFF_SIZE, mmx.isXMM() ? 0x7E : 0x6F); }
+void movq(const Address& addr, const Mmx& mmx) { if (mmx.isXMM()) db(0x66); opSSE(mmx, addr, T_0F, mmx.isXMM() ? 0xD6 : 0x7F); }
+void movq(const Mmx& mmx, const Operand& op) { if (!op.isMEM() && mmx.getKind() != op.getKind()) XBYAK_THROW(ERR_BAD_COMBINATION) if (mmx.isXMM()) db(0xF3); opSSE(mmx, op, T_0F, mmx.isXMM() ? 0x7E : 0x6F); }
 void movq2dq(const Xmm& xmm, const Mmx& mmx) { opSSE(xmm, mmx, T_F3 | T_0F, 0xD6); }
 void movsb() { db(0xA4); }
 void movsd() { db(0xA5); }
@@ -1879,7 +1879,7 @@ void fxrstor64(const Address& addr) { opMR(addr, Reg64(1), T_0F, 0xAE); }
 void movq(const Reg64& reg, const Mmx& mmx) { if (mmx.isXMM()) db(0x66); opSSE(mmx, reg, T_0F, 0x7E); }
 void movq(const Mmx& mmx, const Reg64& reg) { if (mmx.isXMM()) db(0x66); opSSE(mmx, reg, T_0F, 0x6E); }
 void movrs(const Reg& reg, const Address& addr) { opMR(addr, reg, T_0F38, reg.isBit(8) ? 0x8A : 0x8B); }
-void movsxd(const Reg64& reg, const Operand& op) { if (!op.isBit(32)) XBYAK_THROW(ERR_BAD_COMBINATION) opRO(reg, op, T_ALLOW_DIFF_SIZE, 0x63); }
+void movsxd(const Reg64& reg, const Operand& op) { if (!op.isBit(32)) XBYAK_THROW(ERR_BAD_COMBINATION) opRO(reg, op, 0, 0x63); }
 void pextrq(const Operand& op, const Xmm& xmm, uint8_t imm) { if (!op.isREG(64) && !op.isMEM()) XBYAK_THROW(ERR_BAD_COMBINATION) opSSE(Reg64(xmm.getIdx()), op, T_66 | T_0F3A, 0x16, 0, imm); }
 void pinsrq(const Xmm& xmm, const Operand& op, uint8_t imm) { if (!op.isREG(64) && !op.isMEM()) XBYAK_THROW(ERR_BAD_COMBINATION) opSSE(Reg64(xmm.getIdx()), op, T_66 | T_0F3A, 0x22, 0, imm); }
 void senduipi(const Reg64& r) { opRR(Reg32(6), r.cvt32(), T_F3 | T_0F, 0xC7); }
@@ -1920,10 +1920,10 @@ void aesencwide128kl(const Address& addr) { opSSE_APX(xmm0, addr, T_F3|T_0F38, 0
 void aesencwide256kl(const Address& addr) { opSSE_APX(xmm2, addr, T_F3|T_0F38, 0xD8, T_F3|T_MUST_EVEX, 0xD8); }
 void encodekey128(const Reg32& r1, const Reg32& r2) { opEncodeKey(r1, r2, 0xFA, 0xDA); }
 void encodekey256(const Reg32& r1, const Reg32& r2) { opEncodeKey(r1, r2, 0xFB, 0xDB); }
-void rdfsbase(const Reg32e& r) { opRR(eax, r, T_F3|T_0F|T_ALLOW_DIFF_SIZE, 0xAE); }
-void rdgsbase(const Reg32e& r) { opRR(ecx, r, T_F3|T_0F|T_ALLOW_DIFF_SIZE, 0xAE); }
-void wrfsbase(const Reg32e& r) { opRR(edx, r, T_F3|T_0F|T_ALLOW_DIFF_SIZE, 0xAE); }
-void wrgsbase(const Reg32e& r) { opRR(ebx, r, T_F3|T_0F|T_ALLOW_DIFF_SIZE, 0xAE); }
+void rdfsbase(const Reg32e& r) { opRR(eax, r, T_F3|T_0F, 0xAE); }
+void rdgsbase(const Reg32e& r) { opRR(ecx, r, T_F3|T_0F, 0xAE); }
+void wrfsbase(const Reg32e& r) { opRR(edx, r, T_F3|T_0F, 0xAE); }
+void wrgsbase(const Reg32e& r) { opRR(ebx, r, T_F3|T_0F, 0xAE); }
 void tdpbssd(const Tmm& x1, const Tmm& x2, const Tmm& x3) { opVex(x1, &x3, x2, T_F2|T_0F38|T_W0, 0x5E); }
 void tdpbsud(const Tmm& x1, const Tmm& x2, const Tmm& x3) { opVex(x1, &x3, x2, T_F3|T_0F38|T_W0, 0x5E); }
 void tdpbusd(const Tmm& x1, const Tmm& x2, const Tmm& x3) { opVex(x1, &x3, x2, T_66|T_0F38|T_W0, 0x5E); }
